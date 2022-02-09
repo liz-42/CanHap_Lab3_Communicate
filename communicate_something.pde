@@ -61,10 +61,10 @@ float             rEEContact                          = 0.006;
 
 
 /* virtual ball parameters  */
-float             rBall                               = 0.02;
+float             rBall                               = 0.015;
 
 float             mBall                               = 0.15;  // kg
-float             kBall                               = 445;  // N/m
+float             kBall                               = 600;  // N/m
 float             bBall                               = 3.7;
 float             penBall                             = 0.0;  // m
 float             bAir                                = 0.0;  // kg/s
@@ -72,10 +72,18 @@ PVector           fGravity                            = new PVector(0, 9.8*mBall
 float             dt                                  = 1/1000.0;
 
 PVector           posBall                             = new PVector(0, 0.05);  
-PVector           posBall2                            = new PVector(0.05, 0.05);
+PVector           posBall2                            = new PVector(0, 0.075);
+PVector           posBall3                            = new PVector(0, 0.1);
+PVector           posBall4                            = new PVector(0.025, 0.05);
+PVector           posBall5                            = new PVector(0.025, 0.075);
+PVector           posBall6                            = new PVector(0.025, 0.1);
+PVector           posBall7                            = new PVector(0.05, 0.05);
+PVector           posBall8                            = new PVector(0.05, 0.075);
+PVector           posBall9                            = new PVector(0.05, 0.1);
+
 PVector           velBall                             = new PVector(0, 0); 
 
-PVector[]         solidBallPos                        = {posBall, posBall2};
+PVector[]         solidBallPos                        = {posBall, posBall2, posBall3, posBall4, posBall5, posBall6, posBall7, posBall8, posBall9};
 
 PVector           fBall                               = new PVector(0 ,0);    
 PVector           fContact                            = new PVector(0, 0);
@@ -121,7 +129,7 @@ final int         worldPixelHeight                    = 650;
 
 /* graphical elements */
 PShape pGraph, joint, endEffector;
-PShape ball, ball2, leftWall, bottomWall, rightWall;
+PShape ball, ball2, ball3, ball4, ball5, ball6, ball7, ball8, ball9, leftWall, bottomWall, rightWall;
 /* end elements definition *********************************************************************************************/ 
 
 
@@ -171,6 +179,27 @@ void setup(){
   
   ball2 = create_ball(rBall);
   ball2.setStroke(color(0));
+  
+  ball3 = create_ball(rBall);
+  ball3.setStroke(color(0));
+  
+  ball4 = create_ball(rBall);
+  ball4.setStroke(color(0));
+  
+  ball5 = create_ball(rBall);
+  ball5.setStroke(color(0));
+  
+  ball6 = create_ball(rBall);
+  ball6.setStroke(color(0));
+  
+  ball7 = create_ball(rBall);
+  ball7.setStroke(color(0));
+  
+  ball8 = create_ball(rBall);
+  ball8.setStroke(color(0));
+  
+  ball9 = create_ball(rBall);
+  ball9.setStroke(color(0));
   
   /* create left-side wall */
   leftWall = create_wall(posWallLeft.x, posWallLeft.y, posWallLeft.x, posWallLeft.y+0.07);
@@ -242,8 +271,6 @@ class SimulationThread implements Runnable{
       
         penBall = posEEToBallMagnitude - (rBall + rEE);
         /* end ball and end-effector contact forces */
-        
-        println(curBallPos, penBall);
       
       
         /* ball forces */
@@ -389,12 +416,19 @@ void update_animation(float th1, float th2, float xE, float yE){
   shape(pGraph);
   shape(joint);
   
-  shape(leftWall);
-  shape(rightWall);
-  shape(bottomWall);
+  //shape(leftWall);
+  //shape(rightWall);
+  //shape(bottomWall);
   
   shape(ball, posBall.x * pixelsPerMeter, posBall.y * pixelsPerMeter);
   shape(ball2, posBall2.x * pixelsPerMeter, posBall2.y * pixelsPerMeter);
+  shape(ball3, posBall3.x * pixelsPerMeter, posBall3.y * pixelsPerMeter);
+  shape(ball4, posBall4.x * pixelsPerMeter, posBall4.y * pixelsPerMeter);
+  shape(ball5, posBall5.x * pixelsPerMeter, posBall5.y * pixelsPerMeter);
+  shape(ball6, posBall6.x * pixelsPerMeter, posBall6.y * pixelsPerMeter);
+  shape(ball7, posBall7.x * pixelsPerMeter, posBall7.y * pixelsPerMeter);
+  shape(ball8, posBall8.x * pixelsPerMeter, posBall8.y * pixelsPerMeter);
+  shape(ball9, posBall9.x * pixelsPerMeter, posBall9.y * pixelsPerMeter);
   stroke(0);
   
   
