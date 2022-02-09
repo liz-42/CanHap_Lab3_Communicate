@@ -72,7 +72,10 @@ PVector           fGravity                            = new PVector(0, 9.8*mBall
 float             dt                                  = 1/1000.0;
 
 PVector           posBall                             = new PVector(0, 0.05);  
-PVector           velBall                             = new PVector(0, 0);    
+PVector           posBall2                            = new PVector(0.05, 0.05);
+PVector           velBall                             = new PVector(0, 0); 
+
+PVector[]         solidBallPos                        = {posBall, posBall2};
 
 PVector           fBall                               = new PVector(0 ,0);    
 PVector           fContact                            = new PVector(0, 0);
@@ -118,7 +121,7 @@ final int         worldPixelHeight                    = 650;
 
 /* graphical elements */
 PShape pGraph, joint, endEffector;
-PShape ball, leftWall, bottomWall, rightWall;
+PShape ball, ball2, leftWall, bottomWall, rightWall;
 /* end elements definition *********************************************************************************************/ 
 
 
@@ -165,6 +168,9 @@ void setup(){
   /* create ball */
   ball = create_ball(rBall);
   ball.setStroke(color(0));
+  
+  ball2 = create_ball(rBall);
+  ball2.setStroke(color(0));
   
   /* create left-side wall */
   leftWall = create_wall(posWallLeft.x, posWallLeft.y, posWallLeft.x, posWallLeft.y+0.07);
@@ -228,58 +234,66 @@ class SimulationThread implements Runnable{
       
       /* haptic physics force calculation */
       
-      /* ball and end-effector contact forces */
-      posEEToBall = (posBall.copy()).sub(posEE);
-      posEEToBallMagnitude = posEEToBall.mag();
+      for (int i=0; i < solidBallPos.length; i++) {
+        PVector curBallPos = solidBallPos[i];
+              /* ball and end-effector contact forces */
+        posEEToBall = (curBallPos.copy()).sub(posEE);
+        posEEToBallMagnitude = posEEToBall.mag();
       
-      penBall = posEEToBallMagnitude - (rBall + rEE);
-      /* end ball and end-effector contact forces */
-      
-      
-      /* ball forces */
-      if(penBall < 0){
-        rEEContact = rEE + penBall;
-        fContact = posEEToBall.normalize();
-        velEEToBall = velBall.copy().sub(velEE);
-        velEEToBall = fContact.copy().mult(velEEToBall.dot(fContact));
-        velEEToBallMagnitude = velEEToBall.mag();
+        penBall = posEEToBallMagnitude - (rBall + rEE);
+        /* end ball and end-effector contact forces */
         
-        /* since penBall is negative kBall must be negative to ensure the force acts along the end-effector to the ball */
-        fContact = fContact.mult((-kBall * penBall) - (bBall * velEEToBallMagnitude));
-      }
-      else{
-        rEEContact = rEE;
-        fContact.set(0, 0);
-      }
-      /* end ball forces */
+        println(curBallPos, penBall);
       
       
-      /* forces due to damping */
-      fDamping = (velBall.copy()).mult(-bAir);
-      /* end forces due to damping*/
-      
-      
-      /* forces due to walls on ball */
-      fWall.set(0, 0);
-      
-      /* left wall */
-      penWall.set((posBall.x - rBall) - posWallLeft.x, 0);
-      if(penWall.x < 0){
-        fWall = fWall.add((penWall.mult(-kWall))).add((velBall.copy()).mult(-bWall));
-      }
-      
-      /* bottom wall */
-      penWall.set(0, (posBall.y + rBall) - posWallBottom.y);
-      if(penWall.y > 0){
-        fWall = fWall.add((penWall.mult(-kWall))).add((velBall.copy()).mult(-bWall));
+        /* ball forces */
+        if(penBall < 0){
+          println("here");
+          rEEContact = rEE + penBall;
+          fContact = posEEToBall.normalize();
+          velEEToBall = velBall.copy().sub(velEE);
+          velEEToBall = fContact.copy().mult(velEEToBall.dot(fContact));
+          velEEToBallMagnitude = velEEToBall.mag();
+        
+          /* since penBall is negative kBall must be negative to ensure the force acts along the end-effector to the ball */
+          fContact = fContact.mult((-kBall * penBall) - (bBall * velEEToBallMagnitude));
+        }
+        //else{
+        //  rEEContact = rEE;
+        //  fContact.set(0, 0);
+        //}
+        /* end ball forces */     
+        fEE = (fContact.copy()).mult(-1);
+        fEE.set(graphics_to_device(fEE));
       }
       
-      /* right wall */
-      penWall.set((posBall.x + rBall) - posWallRight.x, 0);
-      if(penWall.x > 0){
-        fWall = fWall.add((penWall.mult(-kWall))).add((velBall.copy()).mult(-bWall));
-      }
-      /* end forces due to walls on ball*/
+      
+      ///* forces due to damping */
+      //fDamping = (velBall.copy()).mult(-bAir);
+      ///* end forces due to damping*/
+      
+      
+      ///* forces due to walls on ball */
+      //fWall.set(0, 0);
+      
+      ///* left wall */
+      //penWall.set((posBall.x - rBall) - posWallLeft.x, 0);
+      //if(penWall.x < 0){
+      //  fWall = fWall.add((penWall.mult(-kWall))).add((velBall.copy()).mult(-bWall));
+      //}
+      
+      ///* bottom wall */
+      //penWall.set(0, (posBall.y + rBall) - posWallBottom.y);
+      //if(penWall.y > 0){
+      //  fWall = fWall.add((penWall.mult(-kWall))).add((velBall.copy()).mult(-bWall));
+      //}
+      
+      ///* right wall */
+      //penWall.set((posBall.x + rBall) - posWallRight.x, 0);
+      //if(penWall.x > 0){
+      //  fWall = fWall.add((penWall.mult(-kWall))).add((velBall.copy()).mult(-bWall));
+      //}
+      ///* end forces due to walls on ball*/
       
       
       /* sum of forces */
@@ -380,6 +394,7 @@ void update_animation(float th1, float th2, float xE, float yE){
   shape(bottomWall);
   
   shape(ball, posBall.x * pixelsPerMeter, posBall.y * pixelsPerMeter);
+  shape(ball2, posBall2.x * pixelsPerMeter, posBall2.y * pixelsPerMeter);
   stroke(0);
   
   
