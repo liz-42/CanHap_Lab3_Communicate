@@ -262,6 +262,7 @@ class SimulationThread implements Runnable{
       
       
       /* haptic physics force calculation */
+      PVector[] ballForces = new PVector[solidBallPos.length];
       
       for (int i=0; i < solidBallPos.length; i++) {
         PVector curBallPos = solidBallPos[i];
@@ -272,27 +273,32 @@ class SimulationThread implements Runnable{
         penBall = posEEToBallMagnitude - (rBall + rEE);
         /* end ball and end-effector contact forces */
       
-      
         /* ball forces */
         if(penBall < 0){
-          println("here");
           rEEContact = rEE + penBall;
           fContact = posEEToBall.normalize();
           velEEToBall = velBall.copy().sub(velEE);
           velEEToBall = fContact.copy().mult(velEEToBall.dot(fContact));
           velEEToBallMagnitude = velEEToBall.mag();
-        
-          /* since penBall is negative kBall must be negative to ensure the force acts along the end-effector to the ball */
-          fContact = fContact.mult((-kBall * penBall) - (bBall * velEEToBallMagnitude));
         }
-        //else{
-        //  rEEContact = rEE;
-        //  fContact.set(0, 0);
-        //}
-        /* end ball forces */     
+        else{
+          rEEContact = rEE;
+          fContact.set(0, 0);
+        }
+        /* since penBall is negative kBall must be negative to ensure the force acts along the end-effector to the ball */
+        fContact = fContact.mult((-kBall * penBall) - (bBall * velEEToBallMagnitude));
         fEE = (fContact.copy()).mult(-1);
-        fEE.set(graphics_to_device(fEE));
+        ballForces[i] = fEE;
+        /* end ball forces */     
       }
+      
+      // make sure all ball forces are applied, even when touching multiple balls
+      PVector allForces = ballForces[0];
+      for (int i=1; i < ballForces.length; i++) {
+        allForces.add(ballForces[i]);
+      }
+      fEE = allForces.copy();
+      fEE.set(graphics_to_device(fEE));
       
       
       ///* forces due to damping */
@@ -324,9 +330,9 @@ class SimulationThread implements Runnable{
       
       
       /* sum of forces */
-      fBall = (fContact.copy()).add(fGravity).add(fDamping).add(fWall);      
-      fEE = (fContact.copy()).mult(-1);
-      fEE.set(graphics_to_device(fEE));
+      //fBall = (fContact.copy()).add(fGravity).add(fDamping).add(fWall);      
+      //fEE = (fContact.copy()).mult(-1);
+      //fEE.set(graphics_to_device(fEE));
       /* end sum of forces */
       
       
@@ -445,4 +451,4 @@ PVector device_to_graphics(PVector deviceFrame){
 PVector graphics_to_device(PVector graphicsFrame){
   return graphicsFrame.set(-graphicsFrame.x, graphicsFrame.y);
 }
-/* end helper functions section ****************************************************************************************/
+/* end helper function section *******************************************/ 
