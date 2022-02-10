@@ -130,6 +130,13 @@ final int         worldPixelHeight                    = 650;
 /* graphical elements */
 PShape pGraph, joint, endEffector;
 PShape ball, ball2, ball3, ball4, ball5, ball6, ball7, ball8, ball9, leftWall, bottomWall, rightWall;
+
+// state switching stuff
+PShape button;
+PVector posButton = new PVector(-300, 300);
+boolean leftButton = true;
+
+String curState = "solid";
 /* end elements definition *********************************************************************************************/ 
 
 
@@ -173,7 +180,8 @@ void setup(){
   /* create pantagraph graphics */
   create_pantagraph();
   
-  /* create ball */
+  
+  /* create balls for solid */
   ball = create_ball(rBall);
   ball.setStroke(color(0));
   
@@ -201,19 +209,11 @@ void setup(){
   ball9 = create_ball(rBall);
   ball9.setStroke(color(0));
   
-  /* create left-side wall */
-  leftWall = create_wall(posWallLeft.x, posWallLeft.y, posWallLeft.x, posWallLeft.y+0.07);
-  leftWall.setStroke(color(0));
-  
-  /* create right-sided wall */
-  rightWall = create_wall(posWallRight.x, posWallRight.y, posWallRight.x, posWallRight.y+0.07);
-  rightWall.setStroke(color(0));
-  
-  /* create bottom wall */
-  bottomWall = create_wall(posWallBottom.x-0.07, posWallBottom.y, posWallBottom.x+0.07, posWallBottom.y);
-  bottomWall.setStroke(color(0));
 
-  
+  // create button
+  button = create_ball(rBall);
+  button.setStroke(color(0));
+  button.setFill(color(34, 139, 34));
   
   /* setup framerate speed */
   frameRate(baseFrameRate);
@@ -259,7 +259,7 @@ class SimulationThread implements Runnable{
       
       velEE.set((posEE.copy().sub(posEELast)).div(dt));
       posEELast = posEE;
-      
+     
       
       /* haptic physics force calculation */
       PVector[] ballForces = new PVector[solidBallPos.length];
@@ -292,64 +292,56 @@ class SimulationThread implements Runnable{
         /* end ball forces */     
       }
       
-      // make sure all ball forces are applied, even when touching multiple balls
-      PVector allForces = ballForces[0];
-      for (int i=1; i < ballForces.length; i++) {
-        allForces.add(ballForces[i]);
+      if (curState.equals("solid")) {
+              // make sure all ball forces are applied, even when touching multiple balls
+        PVector allForces = ballForces[0];
+        for (int i=1; i < ballForces.length; i++) {
+          allForces.add(ballForces[i]);
+        }
+        fEE = allForces.copy();
+        fEE.set(graphics_to_device(fEE));
       }
-      fEE = allForces.copy();
-      fEE.set(graphics_to_device(fEE));
-      
-      
-      ///* forces due to damping */
-      //fDamping = (velBall.copy()).mult(-bAir);
-      ///* end forces due to damping*/
-      
-      
-      ///* forces due to walls on ball */
-      //fWall.set(0, 0);
-      
-      ///* left wall */
-      //penWall.set((posBall.x - rBall) - posWallLeft.x, 0);
-      //if(penWall.x < 0){
-      //  fWall = fWall.add((penWall.mult(-kWall))).add((velBall.copy()).mult(-bWall));
-      //}
-      
-      ///* bottom wall */
-      //penWall.set(0, (posBall.y + rBall) - posWallBottom.y);
-      //if(penWall.y > 0){
-      //  fWall = fWall.add((penWall.mult(-kWall))).add((velBall.copy()).mult(-bWall));
-      //}
-      
-      ///* right wall */
-      //penWall.set((posBall.x + rBall) - posWallRight.x, 0);
-      //if(penWall.x > 0){
-      //  fWall = fWall.add((penWall.mult(-kWall))).add((velBall.copy()).mult(-bWall));
-      //}
-      ///* end forces due to walls on ball*/
-      
-      
-      /* sum of forces */
-      //fBall = (fContact.copy()).add(fGravity).add(fDamping).add(fWall);      
-      //fEE = (fContact.copy()).mult(-1);
-      //fEE.set(graphics_to_device(fEE));
-      /* end sum of forces */
-      
-      
-      /* end haptic physics force calculation */
+      else if (curState.equals("liquid")){
+        rEEContact = rEE;
+        fContact.set(0, 0);
+        fEE = fContact.copy();
+      }
+      else {
+        rEEContact = rEE;
+        fContact.set(0, 0);
+        fEE = fContact.copy();
+      }
+
+
+        /* end haptic physics force calculation */
     }
-    
-    /* dynamic state of ball calculation (integrate acceleration of ball) */
-    //posBall = (((fBall.copy()).div(2*mBall)).mult(dt*dt)).add((velBall.copy()).mult(dt)).add(posBall);
-    //velBall = (((fBall.copy()).div(mBall)).mult(dt)).add(velBall);
-    /*end dynamic state of ball calculation */
-    
-    
     
     torques.set(widgetOne.set_device_torques(fEE.array()));
     widgetOne.device_write_torques();
+      
+    // check if end effector is on the green circle
+    PVector posEEInMeters = new PVector(posEE.x*pixelsPerMeter, posEE.y*pixelsPerMeter);
+    PVector posEEToButton = (posButton.copy()).sub(posEEInMeters);
+    float posEEToButtonMagnitude = posEEToButton.mag();
+      
+    if (posEEToButtonMagnitude < 50 && curState.equals("solid") && leftButton) {
+      curState = "liquid";
+      leftButton = false;
+      }
+    else if (posEEToButtonMagnitude < 50 && curState.equals("liquid") && leftButton) {
+      curState = "gas";
+      leftButton = false;
+    }
+    else if (posEEToButtonMagnitude < 50 && curState.equals("gas") && leftButton) {
+      curState = "solid";
+      leftButton = false;
+    }
+    // reset button
+    if (leftButton == false && posEEToButtonMagnitude > 50) {
+      leftButton = true;
+    }
     
-  
+     
     renderingForce = false;
   }
 }
@@ -425,6 +417,9 @@ void update_animation(float th1, float th2, float xE, float yE){
   //shape(leftWall);
   //shape(rightWall);
   //shape(bottomWall);
+  
+  // button
+  shape(button, posButton.x, posButton.y);
   
   shape(ball, posBall.x * pixelsPerMeter, posBall.y * pixelsPerMeter);
   shape(ball2, posBall2.x * pixelsPerMeter, posBall2.y * pixelsPerMeter);
