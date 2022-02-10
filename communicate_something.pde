@@ -136,6 +136,9 @@ PShape button;
 PVector posButton = new PVector(-300, 300);
 boolean leftButton = true;
 
+// for gas
+int rotations = 0;
+
 String curState = "solid";
 /* end elements definition *********************************************************************************************/ 
 
@@ -307,9 +310,55 @@ class SimulationThread implements Runnable{
         fEE = fContact.copy();
       }
       else {
-        rEEContact = rEE;
-        fContact.set(0, 0);
-        fEE = fContact.copy();
+        if (rotations < 2000) {
+          if (posEE.x > 0) {
+            rEEContact = rEE;
+            fContact.set(-10, 0);
+            fEE = fContact.copy();
+          }
+          if (posEE.x > 0.05) {
+            rEEContact = rEE;
+            fContact.set(-5, 10);
+            fEE = fContact.copy();
+          }
+          if (posEE.x > 0 && posEE.y > 0.1) {
+            rEEContact = rEE;
+            fContact.set(10, 5);
+            fEE = fContact.copy();
+          }
+          if (posEE.x < 0.02 && posEE.y > 0.07) {
+            // update rotations
+            rotations = rotations + 1;
+            rEEContact = rEE;
+            fContact.set(-3, -10);
+            fEE = fContact.copy();
+          }
+          if (posEE.x < 0 || posEE.y < 0.03) {
+            rEEContact = rEE;
+            fContact.set(0, 0);
+            fEE = fContact.copy();
+          }
+        }
+        else if (rotations < 9000) {
+          //println(posEE);
+          if (posEE.x > -0.05 && posEE.y > 0.04) {
+            rEEContact = rEE;
+            fContact.set(10, 0);
+            fEE = fContact.copy();
+          }
+          if (posEE.x < -0.05 || posEE.y < 0.03) {
+            rEEContact = rEE;
+            fContact.set(0, 0);
+            fEE = fContact.copy();
+            // reset
+            rotations = 0;
+          }
+        }
+        else {
+          // reset
+          rotations = 0;
+        }
+       
       }
 
 
