@@ -131,10 +131,6 @@ final int         worldPixelHeight                    = 650;
 PShape pGraph, joint, endEffector;
 PShape ball, ball2, ball3, ball4, ball5, ball6, ball7, ball8, ball9, leftWall, bottomWall, rightWall;
 
-// state switching stuff
-PShape button;
-PVector posButton = new PVector(-300, 300);
-boolean leftButton = true;
 
 // for gas
 int rotations = 0;
@@ -213,10 +209,6 @@ void setup(){
   ball9.setStroke(color(0));
   
 
-  // create button
-  button = create_ball(rBall);
-  button.setStroke(color(0));
-  button.setFill(color(34, 139, 34));
   
   /* setup framerate speed */
   frameRate(baseFrameRate);
@@ -251,6 +243,7 @@ class SimulationThread implements Runnable{
     /* put haptic simulation code here, runs repeatedly at 1kHz as defined in setup */
     
     renderingForce = true;
+    println(curState);
     
     if(haplyBoard.data_available()){
       /* GET END-EFFECTOR STATE (TASK SPACE) */
@@ -310,46 +303,49 @@ class SimulationThread implements Runnable{
         fEE = fContact.copy();
       }
       else {
+        /* forces due to damping */
+        fDamping.set(posEE.x*-10, posEE.y*-10);
+        /* end forces due to damping*/
         if (rotations < 2000) {
           if (posEE.x > 0) {
             rEEContact = rEE;
-            fContact.set(-10, 0);
-            fEE = fContact.copy();
+            fContact.set(-2, 0);
+            fEE = fContact.copy().add(fDamping);
           }
           if (posEE.x > 0.05) {
             rEEContact = rEE;
-            fContact.set(-5, 10);
+            fContact.set(-2, 2);
             fEE = fContact.copy();
           }
           if (posEE.x > 0 && posEE.y > 0.1) {
             rEEContact = rEE;
-            fContact.set(10, 5);
+            fContact.set(2, 2);
             fEE = fContact.copy();
           }
-          if (posEE.x < 0.02 && posEE.y > 0.07) {
+          if (posEE.x < 0.05 && posEE.y > 0.08) {
             // update rotations
             rotations = rotations + 1;
             rEEContact = rEE;
-            fContact.set(-3, -10);
+            fContact.set(-1, -1);
             fEE = fContact.copy();
           }
           if (posEE.x < 0 || posEE.y < 0.03) {
             rEEContact = rEE;
             fContact.set(0, 0);
-            fEE = fContact.copy();
+            fEE = fContact.copy().add(fDamping);
           }
         }
         else if (rotations < 9000) {
           //println(posEE);
           if (posEE.x > -0.05 && posEE.y > 0.04) {
             rEEContact = rEE;
-            fContact.set(10, 0);
+            fContact.set(4, 0);
             fEE = fContact.copy();
           }
           if (posEE.x < -0.05 || posEE.y < 0.03) {
             rEEContact = rEE;
             fContact.set(0, 0);
-            fEE = fContact.copy();
+            fEE = fContact.copy().add(fDamping);
             // reset
             rotations = 0;
           }
@@ -367,28 +363,6 @@ class SimulationThread implements Runnable{
     
     torques.set(widgetOne.set_device_torques(fEE.array()));
     widgetOne.device_write_torques();
-      
-    // check if end effector is on the green circle
-    PVector posEEInMeters = new PVector(posEE.x*pixelsPerMeter, posEE.y*pixelsPerMeter);
-    PVector posEEToButton = (posButton.copy()).sub(posEEInMeters);
-    float posEEToButtonMagnitude = posEEToButton.mag();
-      
-    if (posEEToButtonMagnitude < 50 && curState.equals("solid") && leftButton) {
-      curState = "liquid";
-      leftButton = false;
-      }
-    else if (posEEToButtonMagnitude < 50 && curState.equals("liquid") && leftButton) {
-      curState = "gas";
-      leftButton = false;
-    }
-    else if (posEEToButtonMagnitude < 50 && curState.equals("gas") && leftButton) {
-      curState = "solid";
-      leftButton = false;
-    }
-    // reset button
-    if (leftButton == false && posEEToButtonMagnitude > 50) {
-      leftButton = true;
-    }
     
      
     renderingForce = false;
@@ -460,15 +434,33 @@ void update_animation(float th1, float th2, float xE, float yE){
   pGraph.setVertex(3, deviceOrigin.x + lAni*cos(th2), deviceOrigin.y + lAni*sin(th2));
   pGraph.setVertex(2, deviceOrigin.x + xE, deviceOrigin.y + yE);
   
-  shape(pGraph);
-  shape(joint);
+    // text
+  // instructions
+    String s = "Can you identify the states of matter? Press any key to switch to a new state!";
+    fill(0);
+    textSize(20);
+    text(s, 40, 40, 280, 320);
+    if (curState.equals("solid")) {
+      String state = "State 1";
+      fill(0);
+      textSize(16);
+      text(state, 40, 150, 100, 100);
+    }
+    else if (curState.equals("liquid")) {
+      String state = "State 2";
+      fill(0);
+      textSize(16);
+      text(state, 40, 150, 100, 100);
+    }
+    else {
+      String state = "State 3";
+      fill(0);
+      textSize(16);
+      text(state, 40, 150, 100, 100);
+    }
   
-  //shape(leftWall);
-  //shape(rightWall);
-  //shape(bottomWall);
-  
-  // button
-  shape(button, posButton.x, posButton.y);
+  //shape(pGraph);
+  //shape(joint);
   
   shape(ball, posBall.x * pixelsPerMeter, posBall.y * pixelsPerMeter);
   shape(ball2, posBall2.x * pixelsPerMeter, posBall2.y * pixelsPerMeter);
@@ -494,5 +486,18 @@ PVector device_to_graphics(PVector deviceFrame){
 
 PVector graphics_to_device(PVector graphicsFrame){
   return graphicsFrame.set(-graphicsFrame.x, graphicsFrame.y);
+}
+
+// change state when any key pressed
+void keyPressed() {
+  if (curState.equals("solid")) {
+    curState = "liquid";
+  }
+  else if (curState.equals("liquid")) {
+    curState = "gas";
+  }
+  else {
+    curState = "solid";
+  }
 }
 /* end helper function section *******************************************/ 
