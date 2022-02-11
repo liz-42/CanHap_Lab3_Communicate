@@ -47,6 +47,9 @@ PVector           fDamping                            = new PVector(0, 0);
 float             rEE                                 = 0.006;
 float             rEEContact                          = 0.006;
 
+// control state changes
+String curState = "nostate";
+
 
 
 
@@ -82,7 +85,7 @@ HVirtualCoupling  s;
 
 
 /* define world shapes & attributes */
-FCircle           b1, b2, b3; //word changing buttons
+//FCircle           b1, b2, b3; //word changing buttons
 //FCircle           c1, c2, c3, c4, c5, c6, c7, c8, c9; // solid circles
 FBox              word_bx, left, right, bottom, top1 , top2;
 FBody[] particles = new FBody[16];
@@ -131,28 +134,28 @@ void setup(){
   hAPI_Fisica.setScale(pixelsPerCentimeter); 
   world               = new FWorld();
   
-  /* State 1 button */
-  b1                  = new FCircle(2.0); // diameter is 2
-  b1.setPosition(edgeTopLeftX+2.5, edgeTopLeftY+worldHeight/3);
-  b1.setFill(0, 255, 0);
-  b1.setStaticBody(true);
-  world.add(b1);
+  ///* State 1 button */
+  //b1                  = new FCircle(2.0); // diameter is 2
+  //b1.setPosition(edgeTopLeftX+2.5, edgeTopLeftY+worldHeight/3);
+  //b1.setFill(0, 255, 0);
+  //b1.setStaticBody(true);
+  //world.add(b1);
   
-  /* State 2 button */
-  b2                  = new FCircle(2.0);
-  b2.setPosition(edgeTopLeftX+2.5, edgeTopLeftY+worldHeight/2.0);
-  b2.setFill(200,0,0);
-  b2.setStaticBody(true);
-  //b2.setSensor(true);
-  world.add(b2);
+  ///* State 2 button */
+  //b2                  = new FCircle(2.0);
+  //b2.setPosition(edgeTopLeftX+2.5, edgeTopLeftY+worldHeight/2.0);
+  //b2.setFill(200,0,0);
+  //b2.setStaticBody(true);
+  ////b2.setSensor(true);
+  //world.add(b2);
  
-   /* State 3 button */
-  b3                  = new FCircle(2.0);
-  b3.setPosition(edgeTopLeftX+2.5, edgeBottomRightY-worldHeight/3);
-  b3.setFill(120,0,100);
-  b3.setStaticBody(true);
-  //b3.setSensor(true);
-  world.add(b3);
+  // /* State 3 button */
+  //b3                  = new FCircle(2.0);
+  //b3.setPosition(edgeTopLeftX+2.5, edgeBottomRightY-worldHeight/3);
+  //b3.setFill(120,0,100);
+  //b3.setStaticBody(true);
+  ////b3.setSensor(true);
+  //world.add(b3);
   
   /* Box to contain the 'words' */
   
@@ -212,7 +215,7 @@ void setup(){
   world.setEdgesRestitution(.4);
   world.setEdgesFriction(0.5);
  
-  world.draw();
+  //world.draw();
   
   /* setup framerate speed */
   frameRate(baseFrameRate);
@@ -226,6 +229,20 @@ void setup(){
 
 /* draw section ********************************************************************************************************/
 void draw(){
+  //print("hereee");
+  //if(keyPressed) {
+  //  print("here");
+  //  if (key == '1') {
+  //    curState = "solid"; 
+  //    println(curState);
+  //  }
+  //  else if (key == '2') {
+  //    curState = "liquid";
+  //  }
+  //  else if (key == '3') {
+  //    curState = "gas";
+  //  }
+  //}
   /* put graphical code here, runs repeatedly at defined framerate in setup, else default at 60fps: */
   if(renderingForce == false){
     background(255);
@@ -279,11 +296,13 @@ class SimulationThread implements Runnable{
  
 
     
-    if (s.h_avatar.isTouchingBody(b1)){
+    if (curState.equals("solid")){
       gameStart = true;
-      world.remove(b1);
+      //world.remove(b1);
       s.h_avatar.setSensor(false);
       drawSolid();
+      curState = "done";
+      removeLattice(particles);
     }
     
     if (isTouchingWater()) {
@@ -295,15 +314,17 @@ class SimulationThread implements Runnable{
       
     }
       
-    if(s.h_avatar.isTouchingBody(b2)){
-      world.remove(b2);
+    if(curState.equals("liquid")){
+      //world.remove(b2);
       removeLattice(solids);
+      removeLattice(particles);
       s.h_avatar.setSensor(false);
-      drawWater(); 
+      drawWater();
+      curState = "done";
     }
     
-    if (s.h_avatar.isTouchingBody(b3)) {
-      world.remove(b3);
+    if (curState.equals("gas")) {
+      //world.remove(b3);
       removeLattice(particles);
       
               /* forces due to damping */
@@ -507,7 +528,18 @@ void drawSolid() {
     
   }
  
-  
+  //// change state when any key pressed
+  void keyPressed() {
+    if (key == '1') {
+      curState = "solid"; 
+    }
+    else if (key == '2') {
+      curState = "liquid";
+    }
+    else if (key == '3') {
+      curState = "gas";
+    }
+  }
   
   
   
